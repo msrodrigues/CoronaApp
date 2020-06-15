@@ -1,0 +1,13 @@
+name: Corona
+title: Corona
+username:
+account: msrodrigues
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2275499
+bundleId: 3269814
+url: https://msrodrigues.shinyapps.io/Corona/
+when: 1592183731.62215
+lastSyncTime: 1592183731.62217
+asMultiple: FALSE
+asStatic: FALSE
