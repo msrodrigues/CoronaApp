@@ -381,6 +381,21 @@ desenha_grafico_regressao <- function(data,
         filter(dt >= dt_inicial_regressao & dt <= dt_final_regressao)
     
     
+    quantidade_tempo_dobra <- uti_agregado_com_escalas_imputada_adulto %>% 
+        select(dt, covid_positivo) %>% 
+        filter(dt == dt_inicial_regressao | dt == dt_final_regressao)
+    
+    tempo_duplicacao <- double_time(data_inicial = quantidade_tempo_dobra$dt[1], 
+                                    valor_inicial = quantidade_tempo_dobra$covid_positivo[1],
+                                    data_final = quantidade_tempo_dobra$dt[2], 
+                                    valor_final = quantidade_tempo_dobra$covid_positivo[2])
+    
+    anotacao <- paste0(format(quantidade_tempo_dobra$dt[2], "%d/%m/%y"), ": ", quantidade_tempo_dobra$covid_positivo[2], " pacientes em UTI\n",
+                       format(quantidade_tempo_dobra$dt[1], "%d/%m/%y"), ": ", quantidade_tempo_dobra$covid_positivo[1], " pacientes em UTI\n",  
+                       "Dias entre as datas: ", quantidade_tempo_dobra$dt[2] - quantidade_tempo_dobra$dt[1], " dias\n",
+        "Tempo de dobra: ", round(tempo_duplicacao[2],2), " dias")
+    
+    
     uti_agregado_com_escalas_imputada_adulto %>% 
         ggplot(aes(x = dt, y = covid_positivo, label = covid_positivo)) + 
         geom_rect(xmin = dt_inicial_regressao, xmax = dt_final_regressao, fill = roxo, alpha = 0.002, ymin = 0, ymax = 8) + 
@@ -398,12 +413,14 @@ desenha_grafico_regressao <- function(data,
         ylab("Quantidade de pacientes (log2)") +
         theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
         labs(subtitle = paste0("Data: ", format(Sys.time(), "%d/%m/%Y as %X")), 
-             caption = "Fonte: Dashboard das UTIs") +
+             caption = "Fonte: Dashboard das UTIs\nmsrodrigues@gmail.com") +
         theme(legend.position = "none") +
         geom_hline(yintercept = leitos_fase_inicial, linetype = "dashed",  color = "blue", size=0.5) +
         geom_hline(yintercept = leitos_fase_intermediaria, linetype = "dashed",  color = "orange", size=0.5) +
         geom_hline(yintercept = leitos_fase_final, linetype = "dashed",  color = "red", size=0.5) + 
-        geom_vline(xintercept = v_line, linetype = "dashed", color = "black", size = 0.5)
+        geom_vline(xintercept = v_line, linetype = "dashed", color = "black", size = 0.5) +
+        annotate(geom="text", x=today() + 2, y = 2, label= anotacao, hjust = 0, size = 4,
+                 fontface = "bold", color="red")
     
 }
 
@@ -457,7 +474,7 @@ ui <- fluidPage(
                                  label = "Limites das datas do gráfico (eixo x):", 
                                  min = date("2020-03-01"),
                                  max = date("2021-12-31"), 
-                                 value = c(date("2020-03-19"), today() + 40),
+                                 value = c(date("2020-03-19"), today() + 30),
                                  timeFormat = "%d-%b",
                                  dragRange = TRUE
                      ),
@@ -467,7 +484,7 @@ ui <- fluidPage(
                                  label = "Limites do datas da regressão:", 
                                  min = date("2020-03-01"),
                                  max = today(), 
-                                 value = c(today() - 6, today()),
+                                 value = c(today() - 7, today()),
                                  timeFormat = "%d-%b",
                                  dragRange = TRUE
                      ),
