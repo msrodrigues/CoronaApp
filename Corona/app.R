@@ -12,6 +12,7 @@ library(gargle)
 library(googlesheets4)
 library(ggrepel)
 library(shiny)
+library(shinythemes)
 
 Sys.setenv(TZ="Brazil/East")
 options(tz="Brazil/East")
