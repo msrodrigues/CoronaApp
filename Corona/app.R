@@ -404,16 +404,18 @@ desenha_grafico_regressao <- function(data,
         legendaY <- ylab("Quantidade de pacientes (log2)")
         anotacaoY <- annotate(geom="text", x=today() + 2, y = 2, label= anotacao, hjust = 0, size = 4,
                               fontface = "bold", color="red")
+        retangulo <- geom_rect(xmin = dt_inicial_regressao, xmax = dt_final_regressao, fill = roxo, alpha = 0.002, ymin = 0, ymax = 8)
     } else {
         escala <- scale_y_continuous(n.breaks = 8, limits = c(1,400))
         legendaY <- ylab("Quantidade de pacientes")
         anotacaoY <- annotate(geom="text", x=today() + 2, y = 25, label= anotacao, hjust = 0, size = 4,
                               fontface = "bold", color="red")
+        retangulo <- geom_rect(xmin = dt_inicial_regressao, xmax = dt_final_regressao, fill = roxo, alpha = 0.002, ymin = 0, ymax = 255)
     }
     
     uti_agregado_com_escalas_imputada_adulto %>% 
         ggplot(aes(x = dt, y = covid_positivo, label = covid_positivo)) + 
-        geom_rect(xmin = dt_inicial_regressao, xmax = dt_final_regressao, fill = roxo, alpha = 0.002, ymin = 0, ymax = 8) + 
+        retangulo + 
         geom_line() + geom_point() +
         scale_x_date(date_breaks = "1 weeks", date_minor_breaks = "1 days", limits = c(data_inicial, data_final), date_labels =  "%d-%b") +
         escala +
