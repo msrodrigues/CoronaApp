@@ -376,7 +376,10 @@ desenha_grafico_regressao <- function(data,
                                       leitos_fase_inicial =  174, 
                                       leitos_fase_intermediaria =  255, 
                                       leitos_fase_final =  383,
-                                      v_line = today()) {
+                                      v_line = today(),
+                                      escalaY = "log2") {
+    
+
     
     regressao <- uti_agregado_com_escalas_imputada_adulto %>% 
         filter(dt >= dt_inicial_regressao & dt <= dt_final_regressao)
@@ -395,14 +398,25 @@ desenha_grafico_regressao <- function(data,
                        format(quantidade_tempo_dobra$dt[1], "%d/%m/%y"), ": ", quantidade_tempo_dobra$covid_positivo[1], " pacientes em UTI\n",  
                        "Dias entre as datas: ", quantidade_tempo_dobra$dt[2] - quantidade_tempo_dobra$dt[1], " dias\n",
         "Tempo de dobra: ", round(tempo_duplicacao[2],2), " dias")
-    
+
+    if (escalaY == "log2") {
+        escala <- scale_y_continuous(trans='log2', n.breaks = 8, limits = c(1,1024))
+        legendaY <- ylab("Quantidade de pacientes (log2)")
+        anotacaoY <- annotate(geom="text", x=today() + 2, y = 2, label= anotacao, hjust = 0, size = 4,
+                              fontface = "bold", color="red")
+    } else {
+        escala <- scale_y_continuous(n.breaks = 8, limits = c(1,400))
+        legendaY <- ylab("Quantidade de pacientes")
+        anotacaoY <- annotate(geom="text", x=today() + 2, y = 25, label= anotacao, hjust = 0, size = 4,
+                              fontface = "bold", color="red")
+    }
     
     uti_agregado_com_escalas_imputada_adulto %>% 
         ggplot(aes(x = dt, y = covid_positivo, label = covid_positivo)) + 
         geom_rect(xmin = dt_inicial_regressao, xmax = dt_final_regressao, fill = roxo, alpha = 0.002, ymin = 0, ymax = 8) + 
         geom_line() + geom_point() +
         scale_x_date(date_breaks = "1 weeks", date_minor_breaks = "1 days", limits = c(data_inicial, data_final), date_labels =  "%d-%b") +
-        scale_y_continuous(trans='log2', n.breaks = 8, limits = c(1,1024)) +
+        escala +
         geom_line(data = regressao, aes(x = dt, y = covid_positivo, label = covid_positivo, color = vermelho)) + geom_point(data = regressao, aes(color = vermelho)) + 
         geom_smooth(data = regressao, method = "lm", colour = vermelho, se = FALSE,  fullrange = TRUE) +
         geom_text(nudge_y = 0.2, show.legend = FALSE, colour =  vermelho) + theme_light() +
@@ -411,7 +425,7 @@ desenha_grafico_regressao <- function(data,
         annotate(geom="text", label=paste0(leitos_fase_final, " Leitos máximos de UTI com equipamento adicional"), x=as.Date("2020-03-20"), y=leitos_fase_final, vjust=-0.5, colour = "red", hjust = 0)+
         ggtitle("Progressão da quantidade de casos de UTI e linhas de tempo de duplicação") +
         xlab("Tempo decorrente") + 
-        ylab("Quantidade de pacientes (log2)") +
+        legendaY +
         theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
         labs(subtitle = paste0("Data: ", format(Sys.time(), "%d/%m/%Y as %X")), 
              caption = "Fonte: Dashboard das UTIs\nmsrodrigues@gmail.com") +
@@ -419,9 +433,9 @@ desenha_grafico_regressao <- function(data,
         geom_hline(yintercept = leitos_fase_inicial, linetype = "dashed",  color = "blue", size=0.5) +
         geom_hline(yintercept = leitos_fase_intermediaria, linetype = "dashed",  color = "orange", size=0.5) +
         geom_hline(yintercept = leitos_fase_final, linetype = "dashed",  color = "red", size=0.5) + 
-        geom_vline(xintercept = v_line, linetype = "dashed", color = "black", size = 0.5) +
-        annotate(geom="text", x=today() + 2, y = 2, label= anotacao, hjust = 0, size = 4,
-                 fontface = "bold", color="red")
+        geom_vline(xintercept = v_line, linetype = "dashed", color = "black", size = 0.5) + 
+        anotacaoY
+        
     
 }
 
@@ -495,7 +509,12 @@ ui <- fluidPage(
                                  max = 3800, 
                                  value = c(800, 1200),
                                  dragRange = TRUE
-                     )
+                     ),
+                     radioButtons(inputId = "escalaY",
+                                  label = "Escala do eixo Y", 
+                                  choices = c("log2","linear"),
+                                  selected = "log2", 
+                                  inline = TRUE)
                      
         ), 
         
@@ -530,6 +549,7 @@ server <- function(input, output) {
         data_range_grafico <- input$range_grafico
         data_range_regressao <- input$range_regressao
         linha_corte <- input$linha_corte
+        escalaY <- input$escalaY
         
         
         # draw the histogram with the specified number of bins
@@ -537,7 +557,8 @@ server <- function(input, output) {
                                   data_inicial = data_range_grafico[1], 
                                   data_final = data_range_grafico[2], 
                                   leitos_fase_inicial = leitos_fase_inicial, leitos_fase_intermediaria = leitos_fase_intermediaria, leitos_fase_final = leitos_fase_final, 
-                                  dt_inicial_regressao = data_range_regressao[1], dt_final_regressao = data_range_regressao[2], v_line = linha_corte)
+                                  dt_inicial_regressao = data_range_regressao[1], dt_final_regressao = data_range_regressao[2], v_line = linha_corte,
+                                  escalaY = escalaY)
     }, width = widthSize, height = heightSize, res = 96)
 }
 
