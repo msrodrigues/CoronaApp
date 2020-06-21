@@ -46,7 +46,6 @@ options(scipen = 999999)
 # especializada: booleana - distingue uti geral (adulto ou ped) de especializada
 
 
-getwd()
 uti <- read_excel("uti.xlsx")
 uti <- bind_cols(uti, as.data.frame(str_split(uti$`Local Informante`, pattern  = " - ", simplify = TRUE)))
 
@@ -140,74 +139,6 @@ roxo = "#C77CFF" # roxo
 
 # Função Simula Progressão ------------------------------------------------
 
-geomSeries <- function(base, max) {
-    base^(0:floor(log(max, base)))
-}
-
-
-simula_progressao <- function(dias) {
-    uti_agregado_com_escalas_imputada %>% 
-        filter(adulto_ped == "UTI ADULTO") %>% 
-        select(dt, covid_positivo, escala3, escala7, escala10) %>% 
-        mutate(covid_7dias = ifelse(dt >= today() - dias, covid_positivo, NA)) %>% 
-        pivot_longer(cols = -dt, names_to = "leitos", values_to = "n") %>% 
-        ggplot(aes(x = dt, y = n, color = leitos, label = n)) + 
-        geom_point() +  geom_smooth(method = "lm", se = FALSE, fullrange=TRUE) +
-        scale_y_continuous(trans='log2', n.breaks = 8, limits = c(NA,700)) +
-        geom_text(nudge_y = 0.5, show.legend = FALSE) +
-        annotate(geom="text", label="174 Leitos de UTI extras para Corona", x=as.Date("2020-03-20"), y=174, vjust=-0.5, colour = "blue", hjust = 0) +
-        annotate(geom="text", label="255 Plano em fase avançada", x=as.Date("2020-03-20"), y=255, vjust=-0.5, colour = "orange", hjust = 0) +
-        annotate(geom="text", label="383 Leitos máximos de UTI com equipamento adicional", x=as.Date("2020-03-20"), y=383, vjust=-0.5, colour = "red", hjust = 0)+
-        ggtitle("Progressão da quantidade de casos de UTI e linhas de tempo de duplicação") +
-        xlab("Tempo decorrente") + 
-        ylab("Quantidade de pacientes (log2)") +
-        scale_color_discrete(name = "Pacientes: ",
-                             labels = c("Ultimos", dias, " dias", "Desde o princípio", "Duplicação a cada 10 dias", "Duplicação a cada 3 dias", "Duplicação a cda 7 dias")) +
-        theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
-        scale_x_date(date_breaks = "1 week",date_labels = "%d-%m",
-                     limits = as.Date(c("2020-03-19", "2020-06-01"))) + 
-        labs(subtitle = paste0("Data: ", format(Sys.time(), "%d/%m/%Y as %X")), 
-             caption = "Fonte: Dashboard das UTIs") +
-        theme(legend.position = "bottom") +
-        geom_hline(yintercept=174, linetype="dashed",  color = "blue", size=0.5) +
-        geom_hline(yintercept=255, linetype="dashed",  color = "orange", size=0.5) +
-        geom_hline(yintercept=383, linetype="dashed",  color = "red", size=0.5)
-}
-
-
-prefeito_func <- function(df, cor, dt_inicial, dt_final, data_final_grafico = (today() + 7), fullrange = TRUE) {
-    prefeito_positivos <- df %>% 
-        filter(leitos == "covid_positivo") 
-    dt_inicial <- date(dt_inicial)
-    dt_final <- date(dt_final)
-    df %>% 
-        filter(dt >= dt_inicial & dt <= dt_final) %>% 
-        filter(leitos == "covid_positivo") %>% 
-        ggplot(aes(x = dt, y = n, color = leitos, label = n)) + 
-        geom_point(data = prefeito_positivos, aes(x=dt, y = n)) +
-        geom_point(colour = cor) +  geom_smooth(method = "lm", colour = cor, se = FALSE, alpha = 0.5, fullrange = fullrange) +
-        scale_y_continuous(trans='log2', n.breaks = 8, limits = c(4,1024)) +
-        geom_text(nudge_y = 0.5, show.legend = FALSE, colour =  cor) + theme_light() +
-        annotate(geom="text", label="174 Leitos de UTI extras para Corona", x=as.Date("2020-03-20"), y=174, vjust=-0.5, colour = "blue", hjust = 0) +
-        annotate(geom="text", label="255 Plano em fase avançada", x=as.Date("2020-03-20"), y=255, vjust=-0.5, colour = "orange", hjust = 0) +
-        annotate(geom="text", label="383 Leitos máximos de UTI com equipamento adicional", x=as.Date("2020-03-20"), y=383, vjust=-0.5, colour = "red", hjust = 0)+
-        ggtitle("Progressão da quantidade de casos de UTI e linhas de tempo de duplicação") +
-        xlab("Tempo decorrente") + 
-        ylab("Quantidade de pacientes (log2)") +
-        theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
-        scale_x_date(date_breaks = "1 week",date_labels = "%d-%m",
-                     limits = as.Date(c("2020-03-19", as.Date(data_final_grafico)))) + 
-        labs(subtitle = paste0("Data: ", format(Sys.time(), "%d/%m/%Y as %X")), 
-             caption = "Fonte: Dashboard das UTIs") +
-        theme(legend.position = "none") +
-        geom_hline(yintercept=174, linetype="dashed",  color = "blue", size=0.5) +
-        geom_hline(yintercept=255, linetype="dashed",  color = "orange", size=0.5) +
-        geom_hline(yintercept=383, linetype="dashed",  color = "red", size=0.5) + 
-        #geom_vline(xintercept = today()) + theme(legend.position = "none") +
-        geom_segment(aes(x = today(), y = 0, xend = today(), yend = 174))
-    
-}
-
 
 double_time <- function(data_inicial, valor_inicial,  data_final, valor_final) {
     tempo <- as.numeric(date(data_final) - date(data_inicial))
@@ -218,73 +149,6 @@ double_time <- function(data_inicial, valor_inicial,  data_final, valor_final) {
     cat("\nTempo de Duplicação: ", tempo_duplicacao, "\n")
     c(taxa_crescimento = taxa_crescimento, tempo_duplicacao = tempo_duplicacao)
 }
-
-double_time("2020-06-04", 44, "2020-06-11", 69)
-data_caos <- function(data_ref = today(), n_inicial, tp_duplicacao, limites = c(174, 255, 383)) {
-    retorno <- NULL
-    for (i in 1:length(limites)) {
-        delta <-  limites[i] - n_inicial  
-        dias_limite <- round(delta / n_inicial * tp_duplicacao)
-        data_limite <- data_ref + dias_limite
-        retorno[i] <- as.Date(data_limite)
-    }
-    as.Date(retorno, origin = "1970-01-01")
-}
-
-
-retorna_caos <- function(data = positivos_data, 
-                         dt_final = today(),           # essa vai ser usada como data_final na função double_time 
-                         dias_para_tras = 7,           # esse vai determinar a data_inicial na função double_time
-                         data_ref = today(),           # essa vai ser usada como data_inicial na função data_caos
-                         limites = c(174, 255, 383))  {
-    positivos_vetor <- positivos_data %>% pull(covid_positivo)
-    dt_inicial <- today() - dias_para_tras
-    n_inicial <- positivos_data %>% filter(dt == dt_inicial) %>% pull(covid_positivo) # Quantidade de casos no primeiro dia - para a função double_time
-    n_final <-  positivos_data %>% filter(dt == dt_final) %>% pull(covid_positivo)    # Quantidade de casos no último dia - para a função double time
-    n_inicial_data_caos <- positivos_data %>% filter(dt == data_ref) %>% pull(covid_positivo) # Quantidade de casos no dia de referencia para inicio da contagem par ao futuro
-    tp_duplicacao <- double_time(data_inicial = dt_inicial, valor_inicial = n_inicial, data_final = dt_final, valor_final = n_final )
-    cat("\n\nVetor com os positivos por dia: \n",positivos_vetor, "\n\npositivos_data últimos 7 dias\n")
-    print(tail(positivos_data,7))
-    cat("\nLimites de leitos ", limites, "\n")
-    cat("Data inicial: ", format(dt_inicial, "%d/%m/%Y"))
-    cat("\nPacientes na UTI na data inicial: ", n_inicial)
-    cat("\nData final: ", format(dt_final, "%d/%m/%Y"))
-    cat("\nPacientes na UTI na data final: ", n_final)
-    cat("\n\nTempo de duplicação", round(tp_duplicacao[2],2), " dias\n")
-    
-    
-    retorno <-  list(positivos = positivos_vetor, limites = limites, data_inicial = dt_inicial, data_final = dt_final, data_ref = data_ref, tp_duplicacao = tp_duplicacao)
-    if (tp_duplicacao[2] >  0) {
-        data_estouro <- data_caos(data_ref = data_ref, n_inicial = n_inicial_data_caos, tp_duplicacao = tp_duplicacao[2],limites = limites)
-        for (i in 1: length(limites)) {
-            cat("\nData para atingir ", limites[i], " pacientes de UTI COVID: ", format(data_estouro[i], "%d/%m/%Y"))
-        }
-        cat("\n\n")
-        retorno$data_estouro = data_estouro
-        return(retorno) 
-    } else if (tp_duplicacao[2] == 0) {
-        cat("Quantidade de pacientes não mudou. Taxa se mantém estável, não há mudança na tendência\n\n")
-        retorno$data_estouro = 0
-    } else {
-        cat("Tempo de duplicação negativo, tendência de desocupação de leitos\n\n")
-        retorno$data_estouro = -1
-    }
-    
-}
-
-
-tempo_duplicacao_dias_para_tras <- function(dias_para_tras = 5, data_final = today()) {
-    data_inicial <- today() - dias_para_tras
-    valor_inicial <- positivos_data %>% 
-        filter(dt == data_inicial) %>% pull(covid_positivo)
-    valor_final <- positivos_data %>% 
-        filter(dt == data_final) %>% pull(covid_positivo)
-    double_time(data_inicial = data_inicial,
-                valor_inicial = valor_inicial,
-                data_final = data_final,
-                valor_final = valor_final)
-}
-
 
 
 
@@ -326,28 +190,6 @@ uti_agregado_com_escalas_imputada <- full_join(uti_agregado_com_escalas_imputada
 uti_agregado_com_escalas_imputada <- full_join(uti_agregado_com_escalas_imputada, escala_7, by = "dt")
 uti_agregado_com_escalas_imputada <- full_join(uti_agregado_com_escalas_imputada, escala_10, by = "dt")
 
-prefeito_dados <- uti_agregado_com_escalas_imputada %>% 
-    #filter(dt >= today() - 7) %>% 
-    filter(adulto_ped == "UTI ADULTO") %>% 
-    select(dt, covid_positivo) %>% 
-    # mutate(covid_7dias = ifelse(dt >= today() - 8 & !(dt == today()), covid_positivo, NA)) %>% 
-    mutate(covid_15dias = ifelse(dt >= today() - 14, covid_positivo, NA),
-           covid_inicial = ifelse(dt <= min(dt) + 14, covid_positivo, NA)) %>% 
-    mutate(covid_inicial = ifelse(covid_inicial >= 16, NA, covid_inicial)) %>% 
-    pivot_longer(cols = -dt, names_to = "leitos", values_to = "n") 
-
-prefeito_positivos <- prefeito_dados %>% 
-    filter(leitos == "covid_positivo") %>% 
-    #filter(dt >= date("2020-03-16") & dt <= date("2020-03-29"))
-    #filter(dt >= date("2020-03-16") & dt <= date("2020-04-08"))
-    filter(dt >= date("2020-03-16") & dt <= date("2020-04-17"))
-
-
-positivos_vetor <- uti_agregado_diario_imputada_adulto %>% 
-    pull(covid_positivo)
-
-positivos_data <- uti_agregado_diario_imputada_adulto %>% 
-    select(dt, covid_positivo)
 
 
 uti_agregado_com_escalas_imputada_adulto <- uti_agregado_diario_imputada %>% 
