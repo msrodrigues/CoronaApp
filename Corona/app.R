@@ -46,6 +46,7 @@ options(scipen = 999999)
 # especializada: booleana - distingue uti geral (adulto ou ped) de especializada
 
 
+getwd()
 uti <- read_excel("uti.xlsx")
 uti <- bind_cols(uti, as.data.frame(str_split(uti$`Local Informante`, pattern  = " - ", simplify = TRUE)))
 
@@ -139,6 +140,11 @@ roxo = "#C77CFF" # roxo
 
 # Função Simula Progressão ------------------------------------------------
 
+geomSeries <- function(base, max) {
+    base^(0:floor(log(max, base)))
+}
+
+
 
 double_time <- function(data_inicial, valor_inicial,  data_final, valor_final) {
     tempo <- as.numeric(date(data_final) - date(data_inicial))
@@ -149,7 +155,6 @@ double_time <- function(data_inicial, valor_inicial,  data_final, valor_final) {
     cat("\nTempo de Duplicação: ", tempo_duplicacao, "\n")
     c(taxa_crescimento = taxa_crescimento, tempo_duplicacao = tempo_duplicacao)
 }
-
 
 
 # Simulação de progressão -------------------------------------------------
@@ -189,8 +194,6 @@ uti_agregado_com_escalas_imputada <- full_join(uti_agregado_com_escalas_imputada
 uti_agregado_com_escalas_imputada <- full_join(uti_agregado_com_escalas_imputada, escala_5, by = "dt")
 uti_agregado_com_escalas_imputada <- full_join(uti_agregado_com_escalas_imputada, escala_7, by = "dt")
 uti_agregado_com_escalas_imputada <- full_join(uti_agregado_com_escalas_imputada, escala_10, by = "dt")
-
-
 
 uti_agregado_com_escalas_imputada_adulto <- uti_agregado_diario_imputada %>% 
     filter(adulto_ped == "UTI ADULTO" | is.na(adulto_ped)) %>% 
@@ -239,6 +242,7 @@ desenha_grafico_regressao <- function(data,
     anotacao <- paste0(format(quantidade_tempo_dobra$dt[2], "%d/%m/%y"), ": ", quantidade_tempo_dobra$covid_positivo[2], " pacientes em UTI\n",
                        format(quantidade_tempo_dobra$dt[1], "%d/%m/%y"), ": ", quantidade_tempo_dobra$covid_positivo[1], " pacientes em UTI\n", 
                        "Diferença: ", quantidade_tempo_dobra$covid_positivo[2] -quantidade_tempo_dobra$covid_positivo[1], " paciente(s)\n",
+                       "Variação: ", round(((quantidade_tempo_dobra$covid_positivo[2] - quantidade_tempo_dobra$covid_positivo[1]) / quantidade_tempo_dobra$covid_positivo[1]) * 100,2), " %\n", 
                        "Dias entre as datas: ", quantidade_tempo_dobra$dt[2] - quantidade_tempo_dobra$dt[1], " dias\n",
         "Tempo de dobra: ", round(tempo_duplicacao[2],2), " dias")
 
