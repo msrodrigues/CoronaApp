@@ -395,7 +395,8 @@ desenha_grafico_regressao <- function(data,
                                     valor_final = quantidade_tempo_dobra$covid_positivo[2])
     
     anotacao <- paste0(format(quantidade_tempo_dobra$dt[2], "%d/%m/%y"), ": ", quantidade_tempo_dobra$covid_positivo[2], " pacientes em UTI\n",
-                       format(quantidade_tempo_dobra$dt[1], "%d/%m/%y"), ": ", quantidade_tempo_dobra$covid_positivo[1], " pacientes em UTI\n",  
+                       format(quantidade_tempo_dobra$dt[1], "%d/%m/%y"), ": ", quantidade_tempo_dobra$covid_positivo[1], " pacientes em UTI\n", 
+                       "Diferença: ", quantidade_tempo_dobra$covid_positivo[2] -quantidade_tempo_dobra$covid_positivo[1], " paciente(s)\n",
                        "Dias entre as datas: ", quantidade_tempo_dobra$dt[2] - quantidade_tempo_dobra$dt[1], " dias\n",
         "Tempo de dobra: ", round(tempo_duplicacao[2],2), " dias")
 
@@ -408,7 +409,7 @@ desenha_grafico_regressao <- function(data,
     } else {
         escala <- scale_y_continuous(n.breaks = 8, limits = c(1,400))
         legendaY <- ylab("Quantidade de pacientes")
-        anotacaoY <- annotate(geom="text", x=today() + 2, y = 25, label= anotacao, hjust = 0, size = 4,
+        anotacaoY <- annotate(geom="text", x=today() + 2, y = 40, label= anotacao, hjust = 0, size = 4,
                               fontface = "bold", color="red")
         retangulo <- geom_rect(xmin = dt_inicial_regressao, xmax = dt_final_regressao, fill = roxo, alpha = 0.002, ymin = 0, ymax = 255)
     }

@@ -5,9 +5,9 @@ account: msrodrigues
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 2275499
-bundleId: 3296634
+bundleId: 3296710
 url: https://msrodrigues.shinyapps.io/Corona/
-when: 1592693196.305
-lastSyncTime: 1592693196.30501
+when: 1592695046.28902
+lastSyncTime: 1592695046.28904
 asMultiple: FALSE
 asStatic: FALSE
