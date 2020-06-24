@@ -222,7 +222,8 @@ desenha_grafico_regressao <- function(data,
                                       leitos_fase_intermediaria =  255, 
                                       leitos_fase_final =  383,
                                       v_line = today(),
-                                      escalaY = "log2") {
+                                      escalaY = "log2",
+                                      tipo_regressao = "erro") {
     suspeitos <- uti_agregado_com_escalas_imputada_adulto %>% 
         select(dt,covid_susp)
 
@@ -261,6 +262,15 @@ desenha_grafico_regressao <- function(data,
         retangulo <- geom_rect(xmin = dt_inicial_regressao, xmax = dt_final_regressao, fill = roxo, alpha = 0.002, ymin = 0, ymax = 255)
     }
     
+    if (tipo_regressao == "erro") {
+        regressao_grafico <- geom_smooth(data = regressao, method = "lm", colour = vermelho, se = TRUE,  fullrange = TRUE)
+    } else if (tipo_regressao == "linear") {
+        regressao_grafico <- geom_smooth(data = regressao, method = "lm", colour = vermelho, se = FALSE,  fullrange = TRUE)
+    } else {
+        regressao <- uti_agregado_com_escalas_imputada_adulto
+        regressao_grafico <- geom_smooth(data = regressao, colour = vermelho, se = TRUE,  fullrange = TRUE)
+    }
+    
     uti_agregado_com_escalas_imputada_adulto %>% 
         ggplot(aes(x = dt, y = covid_positivo, label = covid_positivo)) + 
         retangulo + 
@@ -268,7 +278,7 @@ desenha_grafico_regressao <- function(data,
         scale_x_date(date_breaks = "1 weeks", date_minor_breaks = "1 days", limits = c(data_inicial, data_final), date_labels =  "%d-%b") +
         escala +
         geom_line(data = regressao, aes(x = dt, y = covid_positivo, label = covid_positivo, color = vermelho)) + geom_point(data = regressao, aes(color = vermelho)) + 
-        geom_smooth(data = regressao, method = "lm", colour = vermelho, se = TRUE,  fullrange = TRUE) +
+        regressao_grafico +
         geom_text(nudge_y = 0.2, show.legend = FALSE, colour =  vermelho) + theme_light() +
         annotate(geom="text", label=paste0(leitos_fase_inicial, " Leitos de UTI extras para Corona"), x=as.Date("2020-03-20"), y = leitos_fase_inicial, vjust=-0.5, colour = "blue", hjust = 0) +
         annotate(geom="text", label=paste0(leitos_fase_intermediaria, " Leitos - Plano em fase avançada"), x=as.Date("2020-03-20"), y = leitos_fase_intermediaria, vjust=-0.5, colour = "orange", hjust = 0) +
@@ -364,7 +374,15 @@ ui <- fluidPage(
                                   label = "Escala do eixo Y", 
                                   choices = c("log2","linear"),
                                   selected = "log2", 
+                                  inline = TRUE),
+                     
+                     radioButtons(inputId = "tipo_regressao",
+                                  label = "Opcionais", 
+                                  choices = c("linear","erro","MA"),
+                                  selected = "erro", 
+                                  choiceNames = c("Linear/n", "Linear com erro\n", "MA"),
                                   inline = TRUE)
+                     
                      
         ), 
         
@@ -400,6 +418,7 @@ server <- function(input, output) {
         data_range_regressao <- input$range_regressao
         linha_corte <- input$linha_corte
         escalaY <- input$escalaY
+        tipo_regressao <- input$tipo_regressao
         
         
         # draw the histogram with the specified number of bins
@@ -408,7 +427,8 @@ server <- function(input, output) {
                                   data_final = data_range_grafico[2], 
                                   leitos_fase_inicial = leitos_fase_inicial, leitos_fase_intermediaria = leitos_fase_intermediaria, leitos_fase_final = leitos_fase_final, 
                                   dt_inicial_regressao = data_range_regressao[1], dt_final_regressao = data_range_regressao[2], v_line = linha_corte,
-                                  escalaY = escalaY)
+                                  escalaY = escalaY,
+                                  tipo_regressao = tipo_regressao)
     }, width = widthSize, height = heightSize, res = 96)
 }
 
