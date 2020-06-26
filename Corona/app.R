@@ -223,7 +223,8 @@ desenha_grafico_regressao <- function(data,
                                       leitos_fase_final =  383,
                                       v_line = today(),
                                       escalaY = "log2",
-                                      tipo_regressao = "erro") {
+                                      tipo_regressao = "erro",
+                                      suspeitos = TRUE) {
     suspeitos <- uti_agregado_com_escalas_imputada_adulto %>% 
         select(dt,covid_susp)
 
@@ -271,14 +272,21 @@ desenha_grafico_regressao <- function(data,
         regressao_grafico <- geom_smooth(data = regressao, colour = vermelho, se = TRUE,  fullrange = TRUE)
     }
     
+    
+    if (suspeitos == TRUE) {
+        suspeitos_linha <- geom_point(suspeitos,aes(x = dt, y = covid_susp), colour = blue)
+    } else {
+        suspeitos_linha <- NULL
+    }
+    
     uti_agregado_com_escalas_imputada_adulto %>% 
         ggplot(aes(x = dt, y = covid_positivo, label = covid_positivo)) + 
         retangulo + 
         geom_line() + geom_point() +
         scale_x_date(date_breaks = "1 weeks", date_minor_breaks = "1 days", limits = c(data_inicial, data_final), date_labels =  "%d-%b") +
-        escala +
+        escala + 
         geom_line(data = regressao, aes(x = dt, y = covid_positivo, label = covid_positivo, color = vermelho)) + geom_point(data = regressao, aes(color = vermelho)) + 
-        regressao_grafico +
+        regressao_grafico + suspeitos_linha +
         geom_text(nudge_y = 0.2, show.legend = FALSE, colour =  vermelho) + theme_light() +
         annotate(geom="text", label=paste0(leitos_fase_inicial, " Leitos de UTI extras para Corona"), x=as.Date("2020-03-20"), y = leitos_fase_inicial, vjust=-0.5, colour = "blue", hjust = 0) +
         annotate(geom="text", label=paste0(leitos_fase_intermediaria, " Leitos - Plano em fase avançada"), x=as.Date("2020-03-20"), y = leitos_fase_intermediaria, vjust=-0.5, colour = "orange", hjust = 0) +
@@ -301,8 +309,16 @@ desenha_grafico_regressao <- function(data,
 
 
 
+dias_uti <- nrow(uti_agregado_com_escalas_imputada_adulto)
+uti_agregado_com_escalas_imputada_adulto$dia <- 1:dias_uti
+
+uti_para_modelo <- uti_agregado_com_escalas_imputada_adulto %>% 
+    filter(dia >= dias_uti - 6)
 
 
+modelo_positivo <- lm(formula = dia ~ covid_positivo, data = uti_para_modelo)
+futuro <- tibble(covid_positivo  = c(174, 255, 383))
+predict(modelo_positivo, futuro)
 
 
 
