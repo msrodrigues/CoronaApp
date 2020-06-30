@@ -206,8 +206,32 @@ uti_agregado_com_escalas_imputada_adulto <- uti_agregado_diario_imputada %>%
     )
 
 
+# Função que calcula as previsões de data do estouro de leitos ------------
 
-
+f_previsoes <- function(limites_de_leitos = c(174,255,383), 
+                        data_inicial_regressao = today() - 6,
+                        data_final_regressao = today()) {
+    
+    dias_uti <- nrow(uti_agregado_com_escalas_imputada_adulto)
+    uti_agregado_com_escalas_imputada_adulto$dia <- 1:dias_uti
+    
+    uti_para_modelo <- uti_agregado_com_escalas_imputada_adulto %>% 
+        filter(dt >= data_inicial_regressao, dt <= data_final_regressao)
+    
+    
+    modelo_positivo <- lm(formula = dia ~ covid_positivo, data = uti_para_modelo)
+    futuro <- tibble(covid_positivo  = c(174, 255, 383))
+    
+    previsoes <- tibble(dias = predict(modelo_positivo, futuro))
+    previsoes <- previsoes %>% 
+        mutate(
+            leitos = c(174, 255, 383),
+            datas = min(uti_agregado_com_escalas_imputada_adulto$dt) + previsoes$dias -1
+        )   
+    previsoes
+    
+}
+f_previsoes()
 
 # Função desenha gráfico --------------------------------------------------
 
@@ -226,8 +250,27 @@ desenha_grafico_regressao <- function(data,
                                       tipo_regressao = "erro",
                                       suspeitos = TRUE) {
     suspeitos <- uti_agregado_com_escalas_imputada_adulto %>% 
-        select(dt,covid_susp)
-
+        select(dt,covid_pos_susp)
+    ocupacao_atual <- tail(uti_agregado_com_escalas_imputada_adulto$covid_positivo,1)
+    
+    
+    previsoes <- f_previsoes(
+        limites_de_leitos = c(leitos_fase_inicial, leitos_fase_intermediaria, leitos_fase_final),
+        data_inicial_regressao = dt_inicial_regressao, data_final_regressao = dt_final_regressao
+    )
+    
+    
+    texto_leitos_primeira_fase <- paste0("Previsão de atingir ", leitos_fase_inicial, " leitos: ", format(previsoes$datas[1], "%d/%m/%Y"), "\n",
+                                         "Dias para ", leitos_fase_inicial," leitos: ", floor(previsoes$datas[1] - today()), " dias")
+    texto_leitos_fase_intermediaria <- paste0("Previsão de atingir ", leitos_fase_intermediaria, " leitos: ", format(previsoes$datas[2], "%d/%m/%Y"), "\n")
+    texto_leitos_fase_final <- paste0("Previsão de atingir ", leitos_fase_final, " leitos: ", format(previsoes$datas[3], "%d/%m/%Y"), "\n")
+    
+    texto_previsoes <- case_when(
+        ocupacao_atual <= leitos_fase_inicial ~ texto_leitos_primeira_fase,
+        ocupacao_atual > leitos_fase_final & ocupacao_atual <= leitos_fase_intermediaria ~ texto_leitos_fase_intermediaria,
+        TRUE ~ texto_leitos_fase_final
+        
+    )
     
     regressao <- uti_agregado_com_escalas_imputada_adulto %>% 
         filter(dt >= dt_inicial_regressao & dt <= dt_final_regressao)
@@ -247,7 +290,9 @@ desenha_grafico_regressao <- function(data,
                        "Diferença: ", quantidade_tempo_dobra$covid_positivo[2] -quantidade_tempo_dobra$covid_positivo[1], " paciente(s)\n",
                        "Variação: ", round(((quantidade_tempo_dobra$covid_positivo[2] - quantidade_tempo_dobra$covid_positivo[1]) / quantidade_tempo_dobra$covid_positivo[1]) * 100,2), " %\n", 
                        "Dias entre as datas: ", quantidade_tempo_dobra$dt[2] - quantidade_tempo_dobra$dt[1], " dias\n",
-        "Tempo de dobra: ", round(tempo_duplicacao[2],2), " dias")
+                        "Tempo de dobra: ", round(tempo_duplicacao[2],2), " dias\n",
+                       "Média de ", round((quantidade_tempo_dobra$covid_positivo[2] - quantidade_tempo_dobra$covid_positivo[1]) / as.numeric(quantidade_tempo_dobra$dt[2] - quantidade_tempo_dobra$dt[1]), 2 ), " pacientes por dia."
+        )
 
     if (escalaY == "log2") {
         escala <- scale_y_continuous(trans='log2', n.breaks = 8, limits = c(1,1024))
@@ -255,10 +300,13 @@ desenha_grafico_regressao <- function(data,
         anotacaoY <- annotate(geom="text", x=today() + 2, y = 2, label= anotacao, hjust = 0, size = 4,
                               fontface = "bold", color="red")
         retangulo <- geom_rect(xmin = dt_inicial_regressao, xmax = dt_final_regressao, fill = roxo, alpha = 0.002, ymin = 0, ymax = 8)
+        anotacaoLinear <- NULL
     } else {
         escala <- scale_y_continuous(n.breaks = 8, limits = c(1,400))
         legendaY <- ylab("Quantidade de pacientes")
         anotacaoY <- annotate(geom="text", x=today() + 2, y = 40, label= anotacao, hjust = 0, size = 4,
+                              fontface = "bold", color="red")
+        anotacaoLinear <- annotate(geom="text", x= date("2020-03-19"), y = 100, label= texto_previsoes, hjust = 0, size = 4,
                               fontface = "bold", color="red")
         retangulo <- geom_rect(xmin = dt_inicial_regressao, xmax = dt_final_regressao, fill = roxo, alpha = 0.002, ymin = 0, ymax = 255)
     }
@@ -274,7 +322,7 @@ desenha_grafico_regressao <- function(data,
     
     
     if (suspeitos == TRUE) {
-        suspeitos_linha <- geom_point(suspeitos,aes(x = dt, y = covid_susp), colour = blue)
+        suspeitos_linha <- geom_point(suspeitos, aes(x = dt, y = covid_pos_susp), colour = blue)
     } else {
         suspeitos_linha <- NULL
     }
@@ -287,7 +335,8 @@ desenha_grafico_regressao <- function(data,
         escala + 
         geom_line(data = regressao, aes(x = dt, y = covid_positivo, label = covid_positivo, color = vermelho)) + geom_point(data = regressao, aes(color = vermelho)) + 
         regressao_grafico + suspeitos_linha +
-        geom_text(nudge_y = 0.2, show.legend = FALSE, colour =  vermelho) + theme_light() +
+        geom_text(nudge_y = 0.2, show.legend = FALSE, colour =  vermelho, check_overlap = TRUE) + 
+        theme_light() +
         annotate(geom="text", label=paste0(leitos_fase_inicial, " Leitos de UTI extras para Corona"), x=as.Date("2020-03-20"), y = leitos_fase_inicial, vjust=-0.5, colour = "blue", hjust = 0) +
         annotate(geom="text", label=paste0(leitos_fase_intermediaria, " Leitos - Plano em fase avançada"), x=as.Date("2020-03-20"), y = leitos_fase_intermediaria, vjust=-0.5, colour = "orange", hjust = 0) +
         annotate(geom="text", label=paste0(leitos_fase_final, " Leitos máximos de UTI com equipamento adicional"), x=as.Date("2020-03-20"), y=leitos_fase_final, vjust=-0.5, colour = "red", hjust = 0)+
@@ -302,23 +351,13 @@ desenha_grafico_regressao <- function(data,
         geom_hline(yintercept = leitos_fase_intermediaria, linetype = "dashed",  color = "orange", size=0.5) +
         geom_hline(yintercept = leitos_fase_final, linetype = "dashed",  color = "red", size=0.5) + 
         geom_vline(xintercept = v_line, linetype = "dashed", color = "black", size = 0.5) + 
-        anotacaoY
+        anotacaoY + anotacaoLinear
         
     
 }
 
 
 
-dias_uti <- nrow(uti_agregado_com_escalas_imputada_adulto)
-uti_agregado_com_escalas_imputada_adulto$dia <- 1:dias_uti
-
-uti_para_modelo <- uti_agregado_com_escalas_imputada_adulto %>% 
-    filter(dia >= dias_uti - 6)
-
-
-modelo_positivo <- lm(formula = dia ~ covid_positivo, data = uti_para_modelo)
-futuro <- tibble(covid_positivo  = c(174, 255, 383))
-predict(modelo_positivo, futuro)
 
 
 
