@@ -249,9 +249,9 @@ desenha_grafico_regressao <- function(data,
                                       escalaY = "log2",
                                       tipo_regressao = "erro",
                                       suspeitos = TRUE) {
-    suspeitos <- uti_agregado_com_escalas_imputada_adulto %>% 
-        select(dt,covid_pos_susp)
-    ocupacao_atual <- tail(uti_agregado_com_escalas_imputada_adulto$covid_positivo,1)
+   
+    
+    ocupacao_atual <- tail(uti_agregado_diario_imputada_adulto$covid_positivo,1)
     
     
     previsoes <- f_previsoes(
@@ -320,12 +320,11 @@ desenha_grafico_regressao <- function(data,
         regressao_grafico <- geom_smooth(data = regressao, colour = vermelho, se = TRUE,  fullrange = TRUE)
     }
     
-    
-    if (suspeitos == TRUE) {
-        suspeitos_linha <- geom_point(suspeitos, aes(x = dt, y = covid_pos_susp), colour = blue)
-    } else {
-        suspeitos_linha <- NULL
-    }
+    # if (suspeitos == TRUE) {
+    #     suspeitos_linha <- geom_point(aes(x = dt, y = covid), col = "blue", data = uti_agregado_com_escalas_imputada_adulto)
+    # } else {
+    #     suspeitos_linha <- NULL
+    # }
     
     uti_agregado_com_escalas_imputada_adulto %>% 
         ggplot(aes(x = dt, y = covid_positivo, label = covid_positivo)) + 
@@ -334,7 +333,7 @@ desenha_grafico_regressao <- function(data,
         scale_x_date(date_breaks = "1 weeks", date_minor_breaks = "1 days", limits = c(data_inicial, data_final), date_labels =  "%d-%b") +
         escala + 
         geom_line(data = regressao, aes(x = dt, y = covid_positivo, label = covid_positivo, color = vermelho)) + geom_point(data = regressao, aes(color = vermelho)) + 
-        regressao_grafico + suspeitos_linha +
+        regressao_grafico  +
         geom_text(nudge_y = 0.2, show.legend = FALSE, colour =  vermelho, check_overlap = TRUE) + 
         theme_light() +
         annotate(geom="text", label=paste0(leitos_fase_inicial, " Leitos de UTI extras para Corona"), x=as.Date("2020-03-20"), y = leitos_fase_inicial, vjust=-0.5, colour = "blue", hjust = 0) +
