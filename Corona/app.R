@@ -253,6 +253,14 @@ desenha_grafico_regressao <- function(data,
     
     ocupacao_atual <- tail(uti_agregado_diario_imputada_adulto$covid_positivo,1)
     
+    suspeitos_df <- uti_agregado_diario_imputada_adulto %>% 
+        ungroup() 
+    
+    suspeitos_df <- suspeitos_df %>% 
+        select(dt, covid_positivo, covid_susp) %>% 
+        group_by(dt) %>% 
+        summarise(covid_pos_susp = covid_positivo + covid_susp) %>% 
+        ungroup()
     
     previsoes <- f_previsoes(
         limites_de_leitos = c(leitos_fase_inicial, leitos_fase_intermediaria, leitos_fase_final),
@@ -296,6 +304,7 @@ desenha_grafico_regressao <- function(data,
 
     if (escalaY == "log2") {
         escala <- scale_y_continuous(trans='log2', n.breaks = 8, limits = c(1,1024))
+        rotulos <- geom_text(nudge_y = 0.3, show.legend = FALSE, colour =  vermelho, check_overlap = TRUE) 
         legendaY <- ylab("Quantidade de pacientes (log2)")
         anotacaoY <- annotate(geom="text", x=today() + 2, y = 2, label= anotacao, hjust = 0, size = 4,
                               fontface = "bold", color="red")
@@ -303,6 +312,7 @@ desenha_grafico_regressao <- function(data,
         anotacaoLinear <- NULL
     } else {
         escala <- scale_y_continuous(n.breaks = 8, limits = c(1,400))
+        rotulos <- geom_text(nudge_y = 10, show.legend = FALSE, colour =  vermelho, check_overlap = TRUE) 
         legendaY <- ylab("Quantidade de pacientes")
         anotacaoY <- annotate(geom="text", x=today() + 2, y = 40, label= anotacao, hjust = 0, size = 4,
                               fontface = "bold", color="red")
@@ -320,21 +330,15 @@ desenha_grafico_regressao <- function(data,
         regressao_grafico <- geom_smooth(data = regressao, colour = vermelho, se = TRUE,  fullrange = TRUE)
     }
     
-    # if (suspeitos == TRUE) {
-    #     suspeitos_linha <- geom_point(aes(x = dt, y = covid), col = "blue", data = uti_agregado_com_escalas_imputada_adulto)
-    # } else {
-    #     suspeitos_linha <- NULL
-    # }
-    
     uti_agregado_com_escalas_imputada_adulto %>% 
         ggplot(aes(x = dt, y = covid_positivo, label = covid_positivo)) + 
-        retangulo + 
-        geom_line() + geom_point() +
+        retangulo  +
+        geom_line() + geom_point() + 
         scale_x_date(date_breaks = "1 weeks", date_minor_breaks = "1 days", limits = c(data_inicial, data_final), date_labels =  "%d-%b") +
-        escala + 
+        escala +
         geom_line(data = regressao, aes(x = dt, y = covid_positivo, label = covid_positivo, color = vermelho)) + geom_point(data = regressao, aes(color = vermelho)) + 
-        regressao_grafico  +
-        geom_text(nudge_y = 0.2, show.legend = FALSE, colour =  vermelho, check_overlap = TRUE) + 
+        regressao_grafico  + 
+        rotulos + #geom_text(nudge_y = 0.2, show.legend = FALSE, colour =  vermelho, check_overlap = TRUE) + 
         theme_light() +
         annotate(geom="text", label=paste0(leitos_fase_inicial, " Leitos de UTI extras para Corona"), x=as.Date("2020-03-20"), y = leitos_fase_inicial, vjust=-0.5, colour = "blue", hjust = 0) +
         annotate(geom="text", label=paste0(leitos_fase_intermediaria, " Leitos - Plano em fase avançada"), x=as.Date("2020-03-20"), y = leitos_fase_intermediaria, vjust=-0.5, colour = "orange", hjust = 0) +
