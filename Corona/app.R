@@ -270,12 +270,13 @@ desenha_grafico_regressao <- function(data,
     
     texto_leitos_primeira_fase <- paste0("Previsão de atingir ", leitos_fase_inicial, " leitos: ", format(previsoes$datas[1], "%d/%m/%Y"), "\n",
                                          "Dias para ", leitos_fase_inicial," leitos: ", floor(previsoes$datas[1] - today()), " dias")
-    texto_leitos_fase_intermediaria <- paste0("Previsão de atingir ", leitos_fase_intermediaria, " leitos: ", format(previsoes$datas[2], "%d/%m/%Y"), "\n")
+    texto_leitos_fase_intermediaria <- paste0("Previsão de atingir ", leitos_fase_intermediaria, " leitos: ", format(previsoes$datas[2], "%d/%m/%Y"), "\n",
+                                              "Previsão de atingir ", leitos_fase_final, " leitos: ",  format(previsoes$datas[3], "%d/%m/%Y"), "\n")
     texto_leitos_fase_final <- paste0("Previsão de atingir ", leitos_fase_final, " leitos: ", format(previsoes$datas[3], "%d/%m/%Y"), "\n")
     
     texto_previsoes <- case_when(
         ocupacao_atual <= leitos_fase_inicial ~ texto_leitos_primeira_fase,
-        ocupacao_atual > leitos_fase_final & ocupacao_atual <= leitos_fase_intermediaria ~ texto_leitos_fase_intermediaria,
+        ocupacao_atual > leitos_fase_inicial & ocupacao_atual <= leitos_fase_intermediaria ~ texto_leitos_fase_intermediaria,
         TRUE ~ texto_leitos_fase_final
         
     )
@@ -431,7 +432,7 @@ ui <- fluidPage(
                      radioButtons(inputId = "escalaY",
                                   label = "Escala do eixo Y", 
                                   choices = c("log2","linear"),
-                                  selected = "log2", 
+                                  selected = "linear", 
                                   inline = TRUE),
                      
                      radioButtons(inputId = "tipo_regressao",
