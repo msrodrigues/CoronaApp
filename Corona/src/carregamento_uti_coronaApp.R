@@ -72,6 +72,9 @@ uti <- uti %>%
          )
 
 
+
+
+
 # Criação dos DF de UTI auxiliares ----------------------------------------
 
 # uti_diaria: Banco da UTI filtrado para a última observação diária (mais recente) - Reduz o número de linhas
@@ -239,8 +242,8 @@ uti_agregado_com_escalas_imputada_adulto <- uti_agregado_diario_imputada %>%
 
 
 
-model <- lm(data = md_data, formula = n ~ dt)
-summary(model)
+#model <- lm(data = md_data, formula = n ~ dt)
+#summary(model)
 
 
 desenha_grafico_regressao <- function(data, 
@@ -284,7 +287,50 @@ desenha_grafico_regressao <- function(data,
 
 
 
+uti_agregado_diario_imputada_adulto
 
+fentanyl_mcg_ampola <- 50 * 10
+fentanyl_dose_h <- 50 * 50 / 125 * fentanyl_ml_h
+fentanyl_ml_h <- 10
+fentanyl_mcg_dia <- 24 * fentanyl_dose_h
+fentanyl_ampolas_dia <- fentanyl_mcg_dia /fentanyl_mcg_ampola
+
+midazolan_mg_ampola <- 50 * 5
+midazolan_mg_ml_diluicao <- midazolan_mg_ampola * 5 / 125
+midazolan_ml_h <- 10
+midazolan_mg_dia <- midazolan_mg_ml_diluicao * midazolan_ml_h * 24
+midazolan_ampolas_dia <-  midazolan_mg_dia / midazolan_mg_ampola
+
+
+pacientes <- 226
+prop_vm <- 0.9
+perda <- 0.1
+
+quantidade_mida <- pacientes * midazolan_ampolas_dia * (1 + perda)
+quantidade_fentanyl <- pacientes * fentanyl_ampolas_dia * (1 + perda)
+
+uti_agregado_com_escalas_imputada_adulto %>% 
+  filter(dt == as.Date("2020-07-07") | dt == as.Date("2020-07-14")) %>% 
+  mutate(ocupacao_uti_percentual = pacientes / leitos * 100,
+         ocupacao_covid_percentual = covid_positivo / leitos * 100)
+
+
+uti_diaria_imputada %>% 
+  group_by(dt, local) %>% 
+  ggplot(aes(x = dt, y = covid_positivo, fill = local, color = local)) +
+  geom_area(alpha = 0.4)
+
+uti_diaria_imputada %>%
+  group_by(dt) %>% 
+  mutate(total_positivos = sum(covid_positivo, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  group_by(dt, local) %>% 
+  summarise(porcentagem = covid_positivo / total_positivos) %>% 
+  ggplot(aes(x = dt, y = porcentagem, fill = local, color = local)) +
+  geom_area(alpha = 0.4) + 
+  labs(title = "Proporção de acientes covid(+) em UTI, série histórica, por Hospital",
+       subtitle = "Fonte: Dashboard das UTIs") + 
+  xlab("Tempo") + ylab("Proporção de pacientes")
 
 
 

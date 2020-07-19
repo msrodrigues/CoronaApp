@@ -361,11 +361,17 @@ desenha_grafico_regressao <- function(data,
 }
 
 
-
-
+desenha_grafico_regressao()
 
 
 # Define UI for application
+
+# ui <- navbarPage("Coronavirus Porto Alegre",
+#                  tabPanel("Projeções"),
+#                  navbarMenu("Medicamentos",
+#                             tabPanel("Consumo"),
+#                             tabPanel("Por Hospital"))
+# )
 ui <- fluidPage(
     
     # Application title
