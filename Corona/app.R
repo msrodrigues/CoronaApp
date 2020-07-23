@@ -46,13 +46,14 @@ options(scipen = 999999)
 # especializada: booleana - distingue uti geral (adulto ou ped) de especializada
 
 
-getwd()
 uti <- read_excel("uti.xlsx")
 uti <- bind_cols(uti, as.data.frame(str_split(uti$`Local Informante`, pattern  = " - ", simplify = TRUE)))
 
 
 names(uti) <- c("dt", "email", "local", "leitos", "bloqueados", "pacientes", 
-                "covid_susp", "covid_positivo", "senha", "hospital", "adulto_ped", "tipo_uti")
+                "covid_susp", "covid_positivo", "senha", "emerg_covid", 
+                "emerg_n_covid", "vent_mec", "hospital", "adulto_ped", "tipo_uti")
+
 uti <- uti %>% 
     mutate(dt_time = dt, 
            dt = as.Date(dt),
@@ -80,7 +81,9 @@ uti_agregado_diario <- uti_diaria %>%
               covid_susp = sum(covid_susp, na.rm = TRUE),
               covid_positivo = sum(covid_positivo, na.rm = TRUE),
               pac_nao_covid = sum(pac_nao_covid, na.rm = TRUE),
-              utis_presentes = n()
+              utis_presentes = n(),
+              emerg_covid = sum(emerg_covid, na.rm = TRUE),
+              emerg_n_covid = sum(emerg_n_covid, na.rm = TRUE)
     )
 
 # DFs com o somatório das variáveis de cada hospital separado em adulto e pediátrico
@@ -107,12 +110,15 @@ uti_agregado_diario_imputada <- uti_diaria_imputada_adulto_ped %>%
     summarise(leitos = sum(leitos, na.rm = TRUE),
               bloqueados = sum(bloqueados, na.rm = TRUE),
               pacientes = sum(pacientes, na.rm = TRUE),
+              emerg_covid = sum(emerg_covid, na.rm = TRUE),
+              emerg_n_covid = sum(emerg_n_covid, na.rm = TRUE),
+              vent_mec = sum(vent_mec, na.rm = TRUE),
               covid_susp = sum(covid_susp, na.rm = TRUE),
-              covid_positivo = sum(covid_positivo, na.rm = TRUE),
+              covid_positivo_uti = sum(covid_positivo, na.rm = TRUE),
               pac_nao_covid = sum(pac_nao_covid, na.rm = TRUE),
               utis_presentes = n()
-    )
-
+    ) %>% 
+    mutate(covid_positivo = covid_positivo_uti + emerg_covid)
 
 uti_agregado_diario_imputada_adulto <- uti_diaria_imputada_adulto_ped %>% 
     filter(grepl("ADULTO", adulto_ped)) %>% 
@@ -120,11 +126,15 @@ uti_agregado_diario_imputada_adulto <- uti_diaria_imputada_adulto_ped %>%
     summarise(leitos = sum(leitos, na.rm = TRUE),
               bloqueados = sum(bloqueados, na.rm = TRUE),
               pacientes = sum(pacientes, na.rm = TRUE),
+              emerg_covid = sum(emerg_covid, na.rm = TRUE),
+              emerg_n_covid = sum(emerg_n_covid, na.rm = TRUE),
+              vent_mec = sum(vent_mec, na.rm = TRUE),
               covid_susp = sum(covid_susp, na.rm = TRUE),
-              covid_positivo = sum(covid_positivo, na.rm = TRUE),
+              covid_positivo_uti = sum(covid_positivo, na.rm = TRUE),
               pac_nao_covid = sum(pac_nao_covid, na.rm = TRUE),
               utis_presentes = n()
-    )
+    ) %>% 
+    mutate(covid_positivo = covid_positivo_uti + emerg_covid)
 
 
 
