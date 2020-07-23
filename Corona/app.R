@@ -13,6 +13,9 @@ library(googlesheets4)
 library(ggrepel)
 library(shiny)
 library(shinythemes)
+library(png)
+library(grid)
+library(gridExtra)
 
 Sys.setenv(TZ="Brazil/East")
 options(tz="Brazil/East")
@@ -61,6 +64,8 @@ uti <- uti %>%
            especializada = if_else(adulto_ped %in% c("UTI ADULTO", "UTI PEDIATRICA"), FALSE, TRUE))
 
 
+logo_pmpa <- png::readPNG("logo_pmpa.png")
+logo_pmpa <- matrix(rgb(logo_pmpa[,,1],logo_pmpa[,,2],logo_pmpa[,,3], logo_pmpa[,,4] * 0.2), nrow=dim(logo_pmpa)[1]) #0.2 is alpha
 
 
 # Criação dos DF de UTI auxiliares ----------------------------------------
@@ -263,6 +268,7 @@ desenha_grafico_regressao <- function(data,
     
     ocupacao_atual <- tail(uti_agregado_diario_imputada_adulto$covid_positivo,1)
     
+    
     suspeitos_df <- uti_agregado_diario_imputada_adulto %>% 
         ungroup() 
     
@@ -321,6 +327,7 @@ desenha_grafico_regressao <- function(data,
                               fontface = "bold", color="red")
         retangulo <- geom_rect(xmin = dt_inicial_regressao, xmax = dt_final_regressao, fill = roxo, alpha = 0.002, ymin = 0, ymax = 8)
         anotacaoLinear <- NULL
+        marca_dagua <- NULL
     } else {
         escala <- scale_y_continuous(n.breaks = 8, limits = c(1,400))
         rotulos <- geom_text(nudge_y = 10, show.legend = FALSE, colour =  vermelho, check_overlap = TRUE) 
@@ -330,6 +337,7 @@ desenha_grafico_regressao <- function(data,
         anotacaoLinear <- annotate(geom="text", x= date("2020-03-19"), y = 100, label= texto_previsoes, hjust = 0, size = 4,
                               fontface = "bold", color="red")
         retangulo <- geom_rect(xmin = dt_inicial_regressao, xmax = dt_final_regressao, fill = roxo, alpha = 0.002, ymin = 0, ymax = 255)
+        marca_dagua <- annotation_custom(xmin = as.Date("2020-03-13"), ymin = 60, ymax = 350, grob = rasterGrob(logo_pmpa))
     }
     
     if (tipo_regressao == "erro") {
@@ -365,7 +373,7 @@ desenha_grafico_regressao <- function(data,
         geom_hline(yintercept = leitos_fase_intermediaria, linetype = "dashed",  color = "orange", size=0.5) +
         geom_hline(yintercept = leitos_fase_final, linetype = "dashed",  color = "red", size=0.5) + 
         geom_vline(xintercept = v_line, linetype = "dashed", color = "black", size = 0.5) + 
-        anotacaoY + anotacaoLinear
+        anotacaoY + anotacaoLinear + marca_dagua
         
     
 }
