@@ -139,7 +139,9 @@ uti_agregado_diario_imputada_adulto <- uti_diaria_imputada_adulto_ped %>%
               pac_nao_covid = sum(pac_nao_covid, na.rm = TRUE),
               utis_presentes = n()
     ) %>% 
-    mutate(covid_positivo = covid_positivo_uti + emerg_covid)
+    mutate(covid_positivo = covid_positivo_uti,
+           covid_total_uti = covid_positivo_uti + covid_susp,
+           covid_total = covid_total_uti + emerg_covid)
 
 
 
@@ -272,11 +274,11 @@ desenha_grafico_regressao <- function(data,
     suspeitos_df <- uti_agregado_diario_imputada_adulto %>% 
         ungroup() 
     
-    suspeitos_df <- suspeitos_df %>% 
-        select(dt, covid_positivo, covid_susp) %>% 
-        group_by(dt) %>% 
-        summarise(covid_pos_susp = covid_positivo + covid_susp) %>% 
-        ungroup()
+    # suspeitos_df <- suspeitos_df %>% 
+    #     select(dt, covid_positivo, covid_susp) %>% 
+    #     group_by(dt) %>% 
+    #     summarise(covid_pos_susp = covid_positivo + covid_susp) %>% 
+    #     ungroup()
     
     previsoes <- f_previsoes(
         limites_de_leitos = c(leitos_fase_inicial, leitos_fase_intermediaria, leitos_fase_final),
@@ -297,11 +299,11 @@ desenha_grafico_regressao <- function(data,
         
     )
     
-    regressao <- uti_agregado_com_escalas_imputada_adulto %>% 
+    regressao <- uti_agregado_diario_imputada_adulto %>% 
         filter(dt >= dt_inicial_regressao & dt <= dt_final_regressao)
     
     
-    quantidade_tempo_dobra <- uti_agregado_com_escalas_imputada_adulto %>% 
+    quantidade_tempo_dobra <- uti_agregado_diario_imputada_adulto %>% 
         select(dt, covid_positivo) %>% 
         filter(dt == dt_inicial_regressao | dt == dt_final_regressao)
     
@@ -349,7 +351,7 @@ desenha_grafico_regressao <- function(data,
         regressao_grafico <- geom_smooth(data = regressao, colour = vermelho, se = TRUE,  fullrange = TRUE)
     }
     
-    uti_agregado_com_escalas_imputada_adulto %>% 
+    uti_agregado_diario_imputada_adulto %>% 
         ggplot(aes(x = dt, y = covid_positivo, label = covid_positivo)) + 
         retangulo  +
         geom_line() + geom_point() + 
@@ -461,9 +463,8 @@ ui <- fluidPage(
                      
                      radioButtons(inputId = "tipo_regressao",
                                   label = "Opcionais", 
-                                  choices = c("linear","erro","MA"),
+                                  choices = list("Linear" = "linear", "Linear com erro" = "erro", "Smooth" = "MA"),
                                   selected = "erro", 
-                                  choiceNames = c("Linear/n", "Linear com erro\n", "MA"),
                                   inline = TRUE)
                      
                      
