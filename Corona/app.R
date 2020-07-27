@@ -267,25 +267,18 @@ desenha_grafico_regressao <- function(data,
                                       tipo_regressao = "erro",
                                       suspeitos = TRUE) {
    
-    
+    # Captura a informação da ocupação atual
     ocupacao_atual <- tail(uti_agregado_diario_imputada_adulto$covid_positivo,1)
     
     
-    suspeitos_df <- uti_agregado_diario_imputada_adulto %>% 
-        ungroup() 
-    
-    # suspeitos_df <- suspeitos_df %>% 
-    #     select(dt, covid_positivo, covid_susp) %>% 
-    #     group_by(dt) %>% 
-    #     summarise(covid_pos_susp = covid_positivo + covid_susp) %>% 
-    #     ungroup()
-    
+    # Cálculo das Previsões de Datas Limites
     previsoes <- f_previsoes(
         limites_de_leitos = c(leitos_fase_inicial, leitos_fase_intermediaria, leitos_fase_final),
         data_inicial_regressao = dt_inicial_regressao, data_final_regressao = dt_final_regressao
     )
     
     
+    # Textos para serem acrescentados na lateral esquerda do gráfico  (previsões das datas de estouro)
     texto_leitos_primeira_fase <- paste0("Previsão de atingir ", leitos_fase_inicial, " leitos: ", format(previsoes$datas[1], "%d/%m/%Y"), "\n",
                                          "Dias para ", leitos_fase_inicial," leitos: ", floor(previsoes$datas[1] - today()), " dias")
     texto_leitos_fase_intermediaria <- paste0("Previsão de atingir ", leitos_fase_intermediaria, " leitos: ", format(previsoes$datas[2], "%d/%m/%Y"), "\n",
@@ -299,19 +292,24 @@ desenha_grafico_regressao <- function(data,
         
     )
     
+    # Dados para cálculo da regressão e desenho da faixa 
     regressao <- uti_agregado_diario_imputada_adulto %>% 
         filter(dt >= dt_inicial_regressao & dt <= dt_final_regressao)
     
     
+    # Seleção dos dias para cálculo do tempo de dobra
     quantidade_tempo_dobra <- uti_agregado_diario_imputada_adulto %>% 
         select(dt, covid_positivo) %>% 
         filter(dt == dt_inicial_regressao | dt == dt_final_regressao)
     
+    
+    # Cálculo do tempo de duplicação
     tempo_duplicacao <- double_time(data_inicial = quantidade_tempo_dobra$dt[1], 
                                     valor_inicial = quantidade_tempo_dobra$covid_positivo[1],
                                     data_final = quantidade_tempo_dobra$dt[2], 
                                     valor_final = quantidade_tempo_dobra$covid_positivo[2])
     
+    # Criação do objeto anotação - com o texto para se colocado no canto direito do gráfico
     anotacao <- paste0(format(quantidade_tempo_dobra$dt[2], "%d/%m/%y"), ": ", quantidade_tempo_dobra$covid_positivo[2], " pacientes em UTI\n",
                        format(quantidade_tempo_dobra$dt[1], "%d/%m/%y"), ": ", quantidade_tempo_dobra$covid_positivo[1], " pacientes em UTI\n", 
                        "Diferença: ", quantidade_tempo_dobra$covid_positivo[2] -quantidade_tempo_dobra$covid_positivo[1], " paciente(s)\n",
@@ -320,14 +318,16 @@ desenha_grafico_regressao <- function(data,
                         "Tempo de dobra: ", round(tempo_duplicacao[2],2), " dias\n",
                        "Média de ", round((quantidade_tempo_dobra$covid_positivo[2] - quantidade_tempo_dobra$covid_positivo[1]) / as.numeric(quantidade_tempo_dobra$dt[2] - quantidade_tempo_dobra$dt[1]), 2 ), " pacientes por dia."
         )
-
+    
+    
+    # Ajustes específicos para escala logarítica e linear
     if (escalaY == "log2") {
         escala <- scale_y_continuous(trans='log2', n.breaks = 8, limits = c(1,1024))
         rotulos <- geom_text(nudge_y = 0.3, show.legend = FALSE, colour =  vermelho, check_overlap = TRUE) 
         legendaY <- ylab("Quantidade de pacientes (log2)")
         anotacaoY <- annotate(geom="text", x=today() + 2, y = 2, label= anotacao, hjust = 0, size = 4,
                               fontface = "bold", color="red")
-        retangulo <- geom_rect(xmin = dt_inicial_regressao, xmax = dt_final_regressao, fill = roxo, alpha = 0.002, ymin = 0, ymax = 8)
+        retangulo <- geom_rect(xmin = dt_inicial_regressao, xmax = dt_final_regressao, fill = roxo, alpha = 0.002, ymin = 0, ymax = log(ocupacao_atual,2))
         anotacaoLinear <- NULL
         marca_dagua <- NULL
     } else {
@@ -338,10 +338,12 @@ desenha_grafico_regressao <- function(data,
                               fontface = "bold", color="red")
         anotacaoLinear <- annotate(geom="text", x= date("2020-03-19"), y = 100, label= texto_previsoes, hjust = 0, size = 4,
                               fontface = "bold", color="red")
-        retangulo <- geom_rect(xmin = dt_inicial_regressao, xmax = dt_final_regressao, fill = roxo, alpha = 0.002, ymin = 0, ymax = 255)
+        retangulo <- geom_rect(xmin = dt_inicial_regressao, xmax = dt_final_regressao, fill = roxo, alpha = 0.002, ymin = 0, ymax = ocupacao_atual)
         marca_dagua <- annotation_custom(xmin = as.Date("2020-03-13"), ymin = 60, ymax = 350, grob = rasterGrob(logo_pmpa))
     }
     
+    
+    # Escolha dos tipos de regressão
     if (tipo_regressao == "erro") {
         regressao_grafico <- geom_smooth(data = regressao, method = "lm", colour = vermelho, se = TRUE,  fullrange = TRUE)
     } else if (tipo_regressao == "linear") {
@@ -351,6 +353,9 @@ desenha_grafico_regressao <- function(data,
         regressao_grafico <- geom_smooth(data = regressao, colour = vermelho, se = TRUE,  fullrange = TRUE)
     }
     
+    
+    
+    # Desenho do Gráfico propriamente dito
     uti_agregado_diario_imputada_adulto %>% 
         ggplot(aes(x = dt, y = covid_positivo, label = covid_positivo)) + 
         retangulo  +
@@ -359,7 +364,7 @@ desenha_grafico_regressao <- function(data,
         escala +
         geom_line(data = regressao, aes(x = dt, y = covid_positivo, label = covid_positivo, color = vermelho)) + geom_point(data = regressao, aes(color = vermelho)) + 
         regressao_grafico  + 
-        rotulos + #geom_text(nudge_y = 0.2, show.legend = FALSE, colour =  vermelho, check_overlap = TRUE) + 
+        rotulos + 
         theme_light() +
         annotate(geom="text", label=paste0(leitos_fase_inicial, " Leitos de UTI extras para Corona"), x=as.Date("2020-03-20"), y = leitos_fase_inicial, vjust=-0.5, colour = "blue", hjust = 0) +
         annotate(geom="text", label=paste0(leitos_fase_intermediaria, " Leitos - Plano em fase avançada"), x=as.Date("2020-03-20"), y = leitos_fase_intermediaria, vjust=-0.5, colour = "orange", hjust = 0) +
@@ -384,7 +389,7 @@ desenha_grafico_regressao <- function(data,
 desenha_grafico_regressao()
 
 
-# Define UI for application
+# Define UI for application ---------------------------
 
 # ui <- navbarPage("Coronavirus Porto Alegre",
 #                  tabPanel("Projeções"),
