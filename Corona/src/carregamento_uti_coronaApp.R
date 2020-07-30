@@ -49,10 +49,15 @@ options(scipen = 999999)
 
 # Importa dados do Dashboard das UTIS
 # Um instante de cada UTI por linha
-uti <- read_sheet("https://docs.google.com/spreadsheets/d/1Wy8eskZoiI23Qui4Iamr_pOcLEoDaIVICE-Sgqsoi4s/edit#gid=830997102", sheet = 4)
+uti <- read_sheet("https://docs.google.com/spreadsheets/d/1Wy8eskZoiI23Qui4Iamr_pOcLEoDaIVICE-Sgqsoi4s/edit#gid=830997102", sheet = 4) %>% 
+  arrange(desc(Timestamp))
 
-# Salva o XLS para ser usado pelo CoronaApp (fora desse flexdashboard)
-write.xlsx(x = uti,file = "~/Dropbox/Coding/R/SMS/CoronaApp/Corona/uti.xlsx")
+uti
+write.xlsx(x = uti,file = "uti.xlsx")
+
+write.xlsx(x = uti,file = "Corona/uti.xlsx")
+
+
 # 
 # # Quebra o local informante em 3 colunas (hospital, adulto_ped, tipo_uti)
 # uti <- bind_cols(uti, as.data.frame(str_split(uti$`Local Informante`, pattern  = " - ", simplify = TRUE)))

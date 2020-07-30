@@ -1,3 +1,8 @@
+
+# Carregamento das Bibliotecas --------------------------------------------
+
+
+
 library(openxlsx)
 library(readxl)
 library(WriteXLS)
@@ -24,8 +29,7 @@ options(scipen = 999999)
 
 # source("~/Dropbox/Coding/R/funs/msrfun.R")
 # source(here("src/carregamento_utis.R"))
-#source("~/Dropbox/Coding/R/SMS/Corona/src/carregamento_utis.R")
-
+# source("~/Dropbox/Coding/R/SMS/Corona/src/carregamento_utis.R")
 
 
 # Carretamento do dashboard das UTIs --------------------------------------
@@ -48,8 +52,10 @@ options(scipen = 999999)
 # tipo_uti: Tipo da UTI (I, II ou III)
 # especializada: booleana - distingue uti geral (adulto ou ped) de especializada
 
+uti <- read_excel("uti.xlsx") %>% 
+    arrange(desc(Timestamp))
 
-uti <- read_excel("uti.xlsx")
+
 uti <- bind_cols(uti, as.data.frame(str_split(uti$`Local Informante`, pattern  = " - ", simplify = TRUE)))
 
 
@@ -63,9 +69,17 @@ uti <- uti %>%
            pac_nao_covid = pacientes - covid_susp - covid_positivo,
            especializada = if_else(adulto_ped %in% c("UTI ADULTO", "UTI PEDIATRICA"), FALSE, TRUE))
 
-
+# Carregamento do brazão da prefeitura
 logo_pmpa <- png::readPNG("logo_pmpa.png")
 logo_pmpa <- matrix(rgb(logo_pmpa[,,1],logo_pmpa[,,2],logo_pmpa[,,3], logo_pmpa[,,4] * 0.2), nrow=dim(logo_pmpa)[1]) #0.2 is alpha
+
+
+# Definições de cores ------------------------------------------------
+vermelho = "#f35e5a" # vermelho
+verde = "#17b12b"    # verde
+roxo = "#C77CFF"     # roxo
+rosa = "#FFA1FF"     # rosa
+
 
 
 # Criação dos DF de UTI auxiliares ----------------------------------------
@@ -146,23 +160,15 @@ uti_agregado_diario_imputada_adulto <- uti_diaria_imputada_adulto_ped %>%
 
 
 
-# Definições de constantes ------------------------------------------------
-cor = "#f35e5a" # vermelho
-cor = "#17b12b" # verde
-cor = "#C77CFF" # fuscia
 
-vermelho = "#f35e5a" # vermelho
-verde = "#17b12b" # verde
-roxo = "#C77CFF" # roxo
-
-# Função Simula Progressão ------------------------------------------------
+# Funções para cálculo do tempo de duplicação ------------------------------------------------
 
 geomSeries <- function(base, max) {
     base^(0:floor(log(max, base)))
 }
 
 
-
+# Função para cálculo do tempo de duplicação
 double_time <- function(data_inicial, valor_inicial,  data_final, valor_final) {
     tempo <- as.numeric(date(data_final) - date(data_inicial))
     taxa_crescimento <- log(valor_final/valor_inicial) / tempo
@@ -229,10 +235,10 @@ f_previsoes <- function(limites_de_leitos = c(174,255,383),
                         data_inicial_regressao = today() - 6,
                         data_final_regressao = today()) {
     
-    dias_uti <- nrow(uti_agregado_com_escalas_imputada_adulto)
-    uti_agregado_com_escalas_imputada_adulto$dia <- 1:dias_uti
+    dias_uti <- nrow(uti_agregado_diario_imputada_adulto)
+    uti_agregado_diario_imputada_adulto$dia <- 1:dias_uti
     
-    uti_para_modelo <- uti_agregado_com_escalas_imputada_adulto %>% 
+    uti_para_modelo <- uti_agregado_diario_imputada_adulto %>% 
         filter(dt >= data_inicial_regressao, dt <= data_final_regressao)
     
     
@@ -253,8 +259,8 @@ f_previsoes()
 # Função desenha gráfico --------------------------------------------------
 
 
-
-desenha_grafico_regressao <- function(data, 
+# Função que vai desenhar o gráfico das UTIs
+desenha_grafico_regressao <- function(data,                                         # origem do dados
                                       data_inicial = date("2020-03-10"), 
                                       data_final =  date("2020-08-04"), 
                                       dt_inicial_regressao =  today() - 15, 
@@ -387,7 +393,6 @@ desenha_grafico_regressao <- function(data,
 
 
 desenha_grafico_regressao()
-
 
 # Define UI for application ---------------------------
 
