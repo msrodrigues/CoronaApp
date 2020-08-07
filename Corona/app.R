@@ -155,12 +155,12 @@ uti_agregado_diario_imputada_adulto <- uti_diaria_imputada_adulto_ped %>%
     ) %>% 
     mutate(covid_positivo = covid_positivo_uti,
            covid_total_uti = covid_positivo_uti + covid_susp,
-           covid_total = covid_total_uti + emerg_covid)
+           covid_total = covid_total_uti + emerg_covid) %>% 
+    arrange(desc(dt))
 
 
 
-
-
+write.xlsx(x = uti_agregado_diario_imputada_adulto, file = "uti_agregado_diario_imputada_adulto.xlsx")
 # Funções para cálculo do tempo de duplicação ------------------------------------------------
 
 geomSeries <- function(base, max) {
@@ -273,6 +273,8 @@ desenha_grafico_regressao <- function(data,                                     
                                       tipo_regressao = "erro",
                                       suspeitos = TRUE) {
    
+    uti_agregado_diario_imputada_adulto <- uti_agregado_diario_imputada_adulto %>% 
+        arrange((dt))
     # Captura a informação da ocupação atual
     ocupacao_atual <- tail(uti_agregado_diario_imputada_adulto$covid_positivo,1)
     
@@ -342,8 +344,8 @@ desenha_grafico_regressao <- function(data,                                     
         legendaY <- ylab("Quantidade de pacientes")
         anotacaoY <- annotate(geom="text", x=today() + 2, y = 40, label= anotacao, hjust = 0, size = 4,
                               fontface = "bold", color="red")
-        anotacaoLinear <- annotate(geom="text", x= date("2020-03-19"), y = 100, label= texto_previsoes, hjust = 0, size = 4,
-                              fontface = "bold", color="red")
+        anotacaoLinear <- NULL #annotate(geom="text", x= date("2020-03-19"), y = 100, label= texto_previsoes, hjust = 0, size = 4,
+                          #fontface = "bold", color="red")
         retangulo <- geom_rect(xmin = dt_inicial_regressao, xmax = dt_final_regressao, fill = roxo, alpha = 0.002, ymin = 0, ymax = ocupacao_atual)
         marca_dagua <- annotation_custom(xmin = as.Date("2020-03-13"), ymin = 60, ymax = 350, grob = rasterGrob(logo_pmpa))
     }
@@ -528,4 +530,5 @@ server <- function(input, output) {
 
 # Run the application 
 shinyApp(ui = ui, server = server)
+
 
