@@ -21,6 +21,7 @@ library(shinythemes)
 library(png)
 library(grid)
 library(gridExtra)
+library(broom)
 
 Sys.setenv(TZ="Brazil/East")
 options(tz="Brazil/East")
@@ -155,8 +156,7 @@ uti_agregado_diario_imputada_adulto <- uti_diaria_imputada_adulto_ped %>%
     ) %>% 
     mutate(covid_positivo = covid_positivo_uti,
            covid_total_uti = covid_positivo_uti + covid_susp,
-           covid_total = covid_total_uti + emerg_covid) %>% 
-    arrange(desc(dt))
+           covid_total = covid_total_uti + emerg_covid) 
 
 
 
@@ -263,7 +263,7 @@ f_previsoes()
 desenha_grafico_regressao <- function(data,                                         # origem do dados
                                       data_inicial = date("2020-03-10"), 
                                       data_final =  date("2020-08-04"), 
-                                      dt_inicial_regressao =  today() - 15, 
+                                      dt_inicial_regressao =  today() - 6, 
                                       dt_final_regressao =  today(), 
                                       leitos_fase_inicial =  174, 
                                       leitos_fase_intermediaria =  255, 
@@ -273,8 +273,7 @@ desenha_grafico_regressao <- function(data,                                     
                                       tipo_regressao = "erro",
                                       suspeitos = TRUE) {
    
-    uti_agregado_diario_imputada_adulto <- uti_agregado_diario_imputada_adulto %>% 
-        arrange((dt))
+  
     # Captura a informação da ocupação atual
     ocupacao_atual <- tail(uti_agregado_diario_imputada_adulto$covid_positivo,1)
     
@@ -361,7 +360,15 @@ desenha_grafico_regressao <- function(data,                                     
         regressao_grafico <- geom_smooth(data = regressao, colour = vermelho, se = TRUE,  fullrange = TRUE)
     }
     
+
+    modelo <- lm(dt ~ covid_positivo, data = regressao)
+    new_data <- tibble(covid_positivo = 230:383)
+    as.Date(predict(modelo, newdata = new_data), origin = "1970-01-01")
+  
+    extensao <- augment(modelo, newdata = new_data)
     
+   
+       
     
     # Desenho do Gráfico propriamente dito
     uti_agregado_diario_imputada_adulto %>% 
@@ -388,7 +395,11 @@ desenha_grafico_regressao <- function(data,                                     
         geom_hline(yintercept = leitos_fase_intermediaria, linetype = "dashed",  color = "orange", size=0.5) +
         geom_hline(yintercept = leitos_fase_final, linetype = "dashed",  color = "red", size=0.5) + 
         geom_vline(xintercept = v_line, linetype = "dashed", color = "black", size = 0.5) + 
-        anotacaoY + anotacaoLinear + marca_dagua
+        anotacaoY + anotacaoLinear + marca_dagua + 
+        geom_smooth(method = "lm", data = extensao, aes(x = as.Date(.fitted, origin = "1970-01-01"), y = covid_positivo)) + 
+        geom_point(data = predicao_df, aes(x = dt, y = covid_positivo, color = "yellow")) +
+        geom_vline(xintercept = tail(extensao$.fitted, 1), linetype = "dotted", size = 0.3)
+    
         
     
 }
@@ -530,5 +541,4 @@ server <- function(input, output) {
 
 # Run the application 
 shinyApp(ui = ui, server = server)
-
 
