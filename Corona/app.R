@@ -258,12 +258,11 @@ f_previsoes()
 
 # Função desenha gráfico --------------------------------------------------
 
-
 # Função que vai desenhar o gráfico das UTIs
 desenha_grafico_regressao <- function(data,                                         # origem do dados
                                       data_inicial = date("2020-03-10"), 
                                       data_final =  date("2020-08-04"), 
-                                      dt_inicial_regressao =  today() - 6, 
+                                      dt_inicial_regressao =  today() - 7, 
                                       dt_final_regressao =  today(), 
                                       leitos_fase_inicial =  174, 
                                       leitos_fase_intermediaria =  255, 
@@ -304,6 +303,7 @@ desenha_grafico_regressao <- function(data,                                     
         filter(dt >= dt_inicial_regressao & dt <= dt_final_regressao)
     
     
+    
     # Seleção dos dias para cálculo do tempo de dobra
     quantidade_tempo_dobra <- uti_agregado_diario_imputada_adulto %>% 
         select(dt, covid_positivo) %>% 
@@ -321,7 +321,7 @@ desenha_grafico_regressao <- function(data,                                     
                        format(quantidade_tempo_dobra$dt[1], "%d/%m/%y"), ": ", quantidade_tempo_dobra$covid_positivo[1], " pacientes em UTI\n", 
                        "Diferença: ", quantidade_tempo_dobra$covid_positivo[2] -quantidade_tempo_dobra$covid_positivo[1], " paciente(s)\n",
                        "Variação: ", round(((quantidade_tempo_dobra$covid_positivo[2] - quantidade_tempo_dobra$covid_positivo[1]) / quantidade_tempo_dobra$covid_positivo[1]) * 100,2), " %\n", 
-                       "Dias entre as datas: ", quantidade_tempo_dobra$dt[2] - quantidade_tempo_dobra$dt[1], " dias\n",
+                       "Intervalo: ", quantidade_tempo_dobra$dt[2] - quantidade_tempo_dobra$dt[1], " dias\n",
                         "Tempo de dobra: ", round(tempo_duplicacao[2],2), " dias\n",
                        "Média de ", round((quantidade_tempo_dobra$covid_positivo[2] - quantidade_tempo_dobra$covid_positivo[1]) / as.numeric(quantidade_tempo_dobra$dt[2] - quantidade_tempo_dobra$dt[1]), 2 ), " pacientes por dia."
         )
@@ -360,12 +360,13 @@ desenha_grafico_regressao <- function(data,                                     
         regressao_grafico <- geom_smooth(data = regressao, colour = vermelho, se = TRUE,  fullrange = TRUE)
     }
     
-
-    modelo <- lm(dt ~ covid_positivo, data = regressao)
-    new_data <- tibble(covid_positivo = 230:383)
-    as.Date(predict(modelo, newdata = new_data), origin = "1970-01-01")
-  
-    extensao <- augment(modelo, newdata = new_data)
+    
+    # Criação do modelo
+    modelo <- lm(covid_positivo ~ dt  , data = regressao)
+    novos_dados <- tibble(dt = seq.Date(from = today(), to = today() + 45, by = 1))
+    previsoes_futuras <- predict(modelo, novos_dados)
+    dt_383 <- today() + which(previsoes_futuras >= 382)[[1]] -1
+    regressao_fit <- augment(modelo)
     
    
        
@@ -395,12 +396,10 @@ desenha_grafico_regressao <- function(data,                                     
         geom_hline(yintercept = leitos_fase_intermediaria, linetype = "dashed",  color = "orange", size=0.5) +
         geom_hline(yintercept = leitos_fase_final, linetype = "dashed",  color = "red", size=0.5) + 
         geom_vline(xintercept = v_line, linetype = "dashed", color = "black", size = 0.5) + 
-        anotacaoY + anotacaoLinear + marca_dagua + 
-        geom_smooth(method = "lm", data = extensao, aes(x = as.Date(.fitted, origin = "1970-01-01"), y = covid_positivo)) + 
-        geom_point(data = predicao_df, aes(x = dt, y = covid_positivo, color = "yellow")) +
-        geom_vline(xintercept = tail(extensao$.fitted, 1), linetype = "dotted", size = 0.3)
-    
-        
+        anotacaoY + anotacaoLinear + marca_dagua +
+        geom_hline(yintercept = 383, linetype = "dotted", size = 0.2) + 
+        geom_vline(xintercept = dt_383, linetype = "dotted", size = 0.2)
+                                                                                                          
     
 }
 
@@ -541,4 +540,37 @@ server <- function(input, output) {
 
 # Run the application 
 shinyApp(ui = ui, server = server)
+# 
+# dt_inicial_regressao =  today() - 7
+# dt_final_regressao =  today()
+# regressao <- uti_agregado_diario_imputada_adulto %>% 
+#     filter(dt >= dt_inicial_regressao & dt <= dt_final_regressao)
+# regressao
+# 
+# 
+# 
+# 
+# modelo <- lm(covid_positivo ~ dt  , data = regressao)
+# novos_dados <- tibble(dt = seq.Date(from = today(), to = today() + 45, by = 1))
+# previsoes_futuras <- predict(modelo, novos_dados)
+# dt_383 <- today() + which(previsoes_futuras >= 382)[[1]] -1
+# 
+# 
+# regressao_fit <- augment(modelo)
+# ggplot(regressao, aes(x = dt, y = covid_positivo)) + 
+#     geom_smooth(method = "lm",se = TRUE,  fullrange = TRUE) +
+#     geom_point(data = regressao, aes(x = dt, y = covid_positivo)) +
+#     scale_x_date(limits = c(dt_inicial_regressao, dt_final_regressao + 30), breaks = "weeks") +
+#     scale_y_continuous(limits = c(300, 400), ) +
+#     geom_hline(yintercept = 383, linetype = "dotted", size = 0.2) + 
+#     geom_vline(xintercept = dt_383, linetype = "dotted", size = 0.2) + theme(axis.line = element_line(colour = "azure4", 
+#     size = 0.2, linetype = "solid"), axis.ticks = element_line(colour = "gray28", 
+#     linetype = "dashed")) +labs(title = "Regressão linear e datas de limite de leitos", 
+#     x = "Datas", y = "Quantidade de pacientes", 
+#     subtitle = "Fonte: Dashboard das UTIs", 
+#     caption = "msrodrigues@gmail.com")
+# 
+# regressao
+
+
 
