@@ -55,7 +55,8 @@ options(scipen = 999999)
 
 uti <- read_excel("uti.xlsx") %>% 
     arrange(desc(Timestamp))
-
+# Instante da última atualização
+instante_ultima_atualizacao <- head(uti$Timestamp,1)
 
 uti <- bind_cols(uti, as.data.frame(str_split(uti$`Local Informante`, pattern  = " - ", simplify = TRUE)))
 
@@ -159,7 +160,6 @@ uti_agregado_diario_imputada_adulto <- uti_diaria_imputada_adulto_ped %>%
            covid_total = covid_total_uti + emerg_covid) 
 
 
-
 write.xlsx(x = uti_agregado_diario_imputada_adulto, file = "uti_agregado_diario_imputada_adulto.xlsx")
 # Funções para cálculo do tempo de duplicação ------------------------------------------------
 
@@ -258,6 +258,8 @@ f_previsoes()
 
 # Função desenha gráfico --------------------------------------------------
 
+
+
 # Função que vai desenhar o gráfico das UTIs
 desenha_grafico_regressao <- function(data,                                         # origem do dados
                                       data_inicial = date("2020-03-10"), 
@@ -270,7 +272,8 @@ desenha_grafico_regressao <- function(data,                                     
                                       v_line = today(),
                                       escalaY = "log2",
                                       tipo_regressao = "erro",
-                                      suspeitos = TRUE) {
+                                      suspeitos = TRUE, 
+                                      instante_ultima_atualizacao = Sys.time()) {
    
   
     # Captura a informação da ocupação atual
@@ -367,8 +370,6 @@ desenha_grafico_regressao <- function(data,                                     
     previsoes_futuras <- predict(modelo, novos_dados)
     dt_383 <- today() + which(previsoes_futuras >= 382)[[1]] -1
     regressao_fit <- augment(modelo)
-    
-   
        
     
     # Desenho do Gráfico propriamente dito
@@ -389,7 +390,7 @@ desenha_grafico_regressao <- function(data,                                     
         xlab("Tempo decorrente") + 
         legendaY +
         theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
-        labs(subtitle = paste0("Data: ", format(Sys.time(), "%d/%m/%Y as %X")), 
+        labs(subtitle = paste0("Instante da última atualização: ", format(instante_ultima_atualizacao, "%d/%m/%Y as %H:%M:%S"), " - Gráfico gerado as ", format(Sys.time(), "%H:%M:%S de %d/%m/%Y")), 
              caption = "Fonte: Dashboard das UTIs\nmsrodrigues@gmail.com") +
         theme(legend.position = "none") +
         geom_hline(yintercept = leitos_fase_inicial, linetype = "dashed",  color = "blue", size=0.5) +
@@ -534,7 +535,9 @@ server <- function(input, output) {
                                   leitos_fase_inicial = leitos_fase_inicial, leitos_fase_intermediaria = leitos_fase_intermediaria, leitos_fase_final = leitos_fase_final, 
                                   dt_inicial_regressao = data_range_regressao[1], dt_final_regressao = data_range_regressao[2], v_line = linha_corte,
                                   escalaY = escalaY,
-                                  tipo_regressao = tipo_regressao)
+                                  tipo_regressao = tipo_regressao,
+                                  instante_ultima_atualizacao = instante_ultima_atualizacao
+                                )
     }, width = widthSize, height = heightSize, res = 96)
 }
 
