@@ -320,13 +320,13 @@ desenha_grafico_regressao <- function(data,                                     
                                     valor_final = quantidade_tempo_dobra$covid_positivo[2])
     
     # Criação do objeto anotação - com o texto para se colocado no canto direito do gráfico
-    anotacao <- paste0(format(quantidade_tempo_dobra$dt[2], "%d/%m/%y"), ": ", quantidade_tempo_dobra$covid_positivo[2], " pacientes em UTI\n",
-                       format(quantidade_tempo_dobra$dt[1], "%d/%m/%y"), ": ", quantidade_tempo_dobra$covid_positivo[1], " pacientes em UTI\n", 
+    anotacao <- paste0(format(quantidade_tempo_dobra$dt[2], "%d/%m/%y"), ": ", quantidade_tempo_dobra$covid_positivo[2], " pacientes na UTI\n",
+                       format(quantidade_tempo_dobra$dt[1], "%d/%m/%y"), ": ", quantidade_tempo_dobra$covid_positivo[1], " pacientes na UTI\n", 
                        "Diferença: ", quantidade_tempo_dobra$covid_positivo[2] -quantidade_tempo_dobra$covid_positivo[1], " paciente(s)\n",
                        "Variação: ", round(((quantidade_tempo_dobra$covid_positivo[2] - quantidade_tempo_dobra$covid_positivo[1]) / quantidade_tempo_dobra$covid_positivo[1]) * 100,2), " %\n", 
                        "Intervalo: ", quantidade_tempo_dobra$dt[2] - quantidade_tempo_dobra$dt[1], " dias\n",
                         "Tempo de dobra: ", round(tempo_duplicacao[2],2), " dias\n",
-                       "Média de ", round((quantidade_tempo_dobra$covid_positivo[2] - quantidade_tempo_dobra$covid_positivo[1]) / as.numeric(quantidade_tempo_dobra$dt[2] - quantidade_tempo_dobra$dt[1]), 2 ), " pacientes por dia."
+                       "Média de ", round((quantidade_tempo_dobra$covid_positivo[2] - quantidade_tempo_dobra$covid_positivo[1]) / as.numeric(quantidade_tempo_dobra$dt[2] - quantidade_tempo_dobra$dt[1]), 2 ), " pacientes/dia."
         )
     
     
@@ -348,7 +348,7 @@ desenha_grafico_regressao <- function(data,                                     
                               fontface = "bold", color="red")
         anotacaoLinear <- NULL #annotate(geom="text", x= date("2020-03-19"), y = 100, label= texto_previsoes, hjust = 0, size = 4,
                           #fontface = "bold", color="red")
-        retangulo <- geom_rect(xmin = dt_inicial_regressao, xmax = dt_final_regressao, fill = roxo, alpha = 0.002, ymin = 0, ymax = ocupacao_atual)
+        retangulo <- geom_rect(xmin = dt_inicial_regressao, xmax = dt_final_regressao, fill = roxo, alpsaaha = 0.002, ymin = 0, ymax = ocupacao_atual)
         marca_dagua <- annotation_custom(xmin = as.Date("2020-03-13"), ymin = 60, ymax = 350, grob = rasterGrob(logo_pmpa))
     }
     
